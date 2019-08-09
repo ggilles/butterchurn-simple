@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Butterchurn Demo</title>
+  <meta name="description" content="Butterchurn Demo Example">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <script type="text/javascript" src="./node_modules/butterchurn/lib/butterchurn.js"></script>
+  <script type="text/javascript" src="./node_modules/butterchurn-presets/lib/butterchurnPresetsNonMinimal.min.js"></script>
+  <script type="text/javascript">
+  function initButterchurn() {
+    var butt = butterchurn.default;
+    var presets = butterchurnPresetsNonMinimal.getPresets();
+    var canvas = document.getElementById('canvas');
+    var visualizer = null;
+
+    var presetCycleLength = 15000; // milliseconds
+    var presetKeys = Object.keys(presets);
+    var presetIndex = Math.floor(Math.random() * presetKeys.length);
+
+    function startRenderer() {
+      requestAnimationFrame(() => startRenderer());
+      visualizer.render();
+    }
+
+    function nextPreset(blendTime = 5.7) {
+      if (true /*random*/) {
+        presetIndex = Math.floor(Math.random() * presetKeys.length);
+      } else {
+        presetIndex = (presetIndex + 1) % presetKeys.length;
+      }
+      visualizer.loadPreset(presets[presetKeys[presetIndex]], blendTime);
+    }
+
+    var playBtn = document.getElementById('play');
+    playBtn.onclick = () => {
+      playBtn.className += " hidden";
+      canvas.height = window.innerHeight;
+      canvas.width = window.innerWidth;
+      var audioContext = new AudioContext();
+      visualizer = butt.createVisualizer(audioContext, canvas, {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        pixelRatio: window.devicePixelRatio || 1,
+        textureRatio: 1,
+      });
+      nextPreset(0);
+      cycleInterval = setInterval(() => nextPreset(2.7), presetCycleLength);
+
+      navigator.getUserMedia({ audio: true }, (stream) => {
+        var sourceNode = audioContext.createMediaStreamSource(stream);
+        audioContext.resume();
+
+        var gainNode = audioContext.createGain();
+        gainNode.gain.value = 1.25;
+        sourceNode.connect(gainNode);
+
+        visualizer.connectAudio(gainNode);
+        startRenderer();
+      }, (err) => {
+        console.log('Error getting audio stream from getUserMedia');
+      });
+    };
+  }
+  </script>
+  <style>
+html, body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#play {
+  position: absolute;
+  border: 1px solid gray;
+  padding: 50px;
+  font-size: 3em;
+  font-family: monospace;
+  cursor: pointer;
+  color: gray;
+}
+#play:hover {
+  border: 2px solid green;
+  color: green;
+}
+.hidden {
+  opacity: 0;
+}
+#play:hover.hidden {
+  opacity: 1;
+}
+  </style>
+</head>
+<body onload="initButterchurn();">
+<div id="play">START</div>
+<canvas id='canvas' width='800' height='600'></canvas>
+</body>
+</html>
